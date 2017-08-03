@@ -30,8 +30,14 @@ create and destroy a Vulkan physical device
 #include <fstream>
 #include <util_init.hpp>
 
+#include <android/log.h>
+
+#define APPNAME "clspv-fills-test"
+#define SHOUT(FMT,...) __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "clspv " FMT, __VA_ARGS__)
+
 VkShaderModule create_shader(VkDevice device, const char* spvFileName) {
     std::FILE* spv_file = AndroidFopen(spvFileName, "rb");
+    SHOUT("Reading shader from '%s'", spvFileName);
 
     std::fseek(spv_file, 0, SEEK_END);
     // Use vector of uint32_t to ensure alignment is satisfied.
@@ -52,14 +58,17 @@ VkShaderModule create_shader(VkDevice device, const char* spvFileName) {
     shaderModuleCreateInfo.codeSize = num_bytes;
     shaderModuleCreateInfo.pCode = spvModule.data();
 
+    SHOUT("Call create %c", '\n');
     VkShaderModule shaderModule;
     VkResult U_ASSERT_ONLY res = vkCreateShaderModule(device, &shaderModuleCreateInfo, NULL, &shaderModule);
     assert(res == VK_SUCCESS);
+    SHOUT("Create shader returns %d", res);
 
     return shaderModule;
 }
 
 VkDescriptorSetLayout create_sampler_descriptor_set(VkDevice device, int numSamplers) {
+    SHOUT("Creating %d samplers", numSamplers);
     std::vector<VkDescriptorSetLayoutBinding> bindingSet;
 
     VkDescriptorSetLayoutBinding binding = {};
@@ -81,10 +90,12 @@ VkDescriptorSetLayout create_sampler_descriptor_set(VkDevice device, int numSamp
     VkResult U_ASSERT_ONLY res = vkCreateDescriptorSetLayout(device, &createInfo, NULL, &result);
     assert(res == VK_SUCCESS);
 
+    SHOUT("Creating %d samplers returns %d", numSamplers, int(res));
     return result;
 }
 
 VkDescriptorSetLayout create_buffer_descriptor_set(VkDevice device, int numBuffers) {
+    SHOUT("Create descriptor set layout for %d buffers ", numBuffers);
     std::vector<VkDescriptorSetLayoutBinding> bindingSet;
 
     VkDescriptorSetLayoutBinding binding = {};
@@ -105,11 +116,13 @@ VkDescriptorSetLayout create_buffer_descriptor_set(VkDevice device, int numBuffe
     VkDescriptorSetLayout result;
     VkResult U_ASSERT_ONLY res = vkCreateDescriptorSetLayout(device, &createInfo, NULL, &result);
     assert(res == VK_SUCCESS);
+    SHOUT("Create descriptor set layout returns %d", res);
 
     return result;
 }
 
 VkPipelineLayout create_pipeline_layout(VkDevice device, const std::vector<VkDescriptorSetLayout>& descriptorSets) {
+  SHOUT("create_pipeline_layout %d", 1);
     VkPipelineLayoutCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     createInfo.setLayoutCount = descriptorSets.size();
@@ -118,11 +131,13 @@ VkPipelineLayout create_pipeline_layout(VkDevice device, const std::vector<VkDes
     VkPipelineLayout result;
     VkResult U_ASSERT_ONLY res = vkCreatePipelineLayout(device, &createInfo, NULL, &result);
     assert(res == VK_SUCCESS);
+  SHOUT("create_pipeline_layout %d", res);
 
     return result;
 }
 
 VkPipeline create_pipeline(VkDevice device, VkShaderModule shaderModule, const char* entryName, VkPipelineLayout layout) {
+  SHOUT("create_pipeline for %s", entryName);
     VkComputePipelineCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
     createInfo.layout = layout;
@@ -137,6 +152,7 @@ VkPipeline create_pipeline(VkDevice device, VkShaderModule shaderModule, const c
     VkPipeline result;
     VkResult U_ASSERT_ONLY res = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &createInfo, NULL, &result);
     assert(res == VK_SUCCESS);
+  SHOUT("create_pipeline %d", res);
 
     return result;
 }
@@ -167,7 +183,9 @@ int sample_main(int argc, char *argv[]) {
             break;
         }
     }
+    SHOUT("Found a queue?  %d", int(found));
     assert(found);
+    SHOUT("queue count  %d", int(info.queue_family_count));
     assert(info.queue_family_count >= 1);
 
     info.device_extension_names.push_back("VK_KHR_variable_pointers");
@@ -191,6 +209,7 @@ int sample_main(int argc, char *argv[]) {
 
     VkDevice device;
     VkResult U_ASSERT_ONLY res = vkCreateDevice(info.gpus[0], &device_info, NULL, &device);
+    SHOUT("create device returns %d", res);
     assert(res == VK_SUCCESS);
 
     VkShaderModule compute_shader = create_shader(device, "fills.spv");
