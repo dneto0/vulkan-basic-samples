@@ -37,7 +37,8 @@ create and destroy a Vulkan physical device
 
 VkShaderModule create_shader(VkDevice device, const char* spvFileName) {
     std::FILE* spv_file = AndroidFopen(spvFileName, "rb");
-    SHOUT("Reading shader from '%s'", spvFileName);
+    SHOUT("Reading shader from '%s' got handle %p", spvFileName, spv_file);
+    assert(spv_file);
 
     std::fseek(spv_file, 0, SEEK_END);
     // Use vector of uint32_t to ensure alignment is satisfied.
@@ -151,8 +152,8 @@ VkPipeline create_pipeline(VkDevice device, VkShaderModule shaderModule, const c
 
     VkPipeline result;
     VkResult U_ASSERT_ONLY res = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &createInfo, NULL, &result);
-    assert(res == VK_SUCCESS);
   SHOUT("create_pipeline %d", res);
+    assert(res == VK_SUCCESS);
 
     return result;
 }
